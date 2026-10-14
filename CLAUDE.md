@@ -16,14 +16,14 @@ Spring Boot + JPA 기반 PetClinic REST API 샘플 프로젝트입니다. 현재
 - **DB: 내장 메모리 H2 DB 적용.** 외부 DB 없음. 앱 기동 시 `jdbc:h2:mem:<random-uuid>`로 생성되고 종료 시 사라짐.
 - 스키마는 Hibernate `ddl-auto` 기본값(`create-drop`)으로 엔티티에서 자동 생성. 별도 `schema.sql`/`data.sql` 없음.
 - 데이터는 `LoadDatabase`의 `CommandLineRunner`가 기동 때마다 적재.
-- **Repository: Spring Data JPA 사용.** 모든 Repository는 `JpaRepository<Entity, ID>`를 상속하는 인터페이스이며 커스텀 쿼리 메서드나 `@Query`는 없음.
+- **Repository: Spring Data JPA 사용.** 모든 Repository는 `JpaRepository<Entity, ID>`를 상속하는 인터페이스이며 `@Query`는 없음. 조건 조회는 메서드 이름 파생 쿼리만 사용 (`OwnerRepository.findByLastNameStartingWithIgnoreCase`, `PetRepository.findByBirthDateAfterAndTypeNameIgnoreCase`).
 - H2 Console 접속 시 JDBC URL은 기동 로그의 `HikariPool-1 - Added connection` 줄에서 확인 (username `sa`, 비밀번호 없음).
 
 ## 빌드 / 실행
 
 ```bash
 ./gradlew bootRun          # 앱 실행 (기본 포트 8080)
-./gradlew test             # 테스트 (contextLoads + OwnerControllerTest MockMvc 4건)
+./gradlew test             # 테스트 (contextLoads + OwnerControllerTest 4건 + PetControllerTest 6건)
 ./gradlew build
 ```
 
@@ -158,7 +158,7 @@ erDiagram
 | Base path | 목록 | 단건 |
 |---|---|---|
 | `/api/v1/owners` | `GET`, `GET ?lastname=kim` (lastName이 kim으로 시작, 대소문자 무시) | `GET /{id}` |
-| `/api/v1/pets` | `GET` | `GET /{id}` |
+| `/api/v1/pets` | `GET`, `GET ?year=3&type=cat` (현재 날짜 기준 생후 3년 미만인 cat, type 대소문자 무시. year/type 중 하나만 주면 `IllegalArgumentException` → 400) | `GET /{id}` |
 | `/api/v1/types` | `GET` | `GET /{id}` |
 | `/api/v1/vets` | `GET` | `GET /{id}` |
 | `/api/v1/specialities` | `GET` | `GET /{id}` |
@@ -195,6 +195,6 @@ erDiagram
   - DTO는 기본 생성자 + 전체 필드 생성자 + getter/setter로 작성합니다.
   - 연관 객체는 중첩 DTO로 담습니다 (예: `PetDto` 안에 `PetTypeDto`, `OwnerDto`; `VisitDto` 안에 `PetDto`).
 - Owner/Vet은 `people` 단일 테이블을 공유하므로 ID가 섞여 부여됩니다. 더미 데이터 기준 Vet은 1~6, Owner는 7~16입니다.
-- 전역 예외 처리(`@ControllerAdvice`)가 없어 `NoSuchElementException`은 500으로 응답됩니다.
+- 전역 예외 처리는 `controller/GlobalExceptionHandler`(`@RestControllerAdvice`)가 `IllegalArgumentException`만 400 + `ErrorDto(status, message)`로 변환합니다. `NoSuchElementException`은 처리하지 않아 500으로 응답됩니다.
 - Spring Security는 의존성에 없습니다. Member/Role 엔티티는 데이터만 존재합니다.
 - 루트의 `Day3_petclinic_r2.zip`은 원본 소스 압축본이며 git에서 제외되어 있습니다.
