@@ -22,6 +22,17 @@ public class OwnerService {
         return ownerRepository.findAll();
     }
 
+    /**
+     * lastName이 주어진 문자열로 시작하는 Owner 목록을 조회한다.
+     * lastName이 null 이거나 공백이면 전체 목록을 반환한다.
+     */
+    public List<Owner> findOwnersByLastName(String lastName) {
+        if (lastName == null || lastName.isBlank()) {
+            return findOwners();
+        }
+        return ownerRepository.findByLastNameStartingWithIgnoreCase(lastName.trim());
+    }
+
     public Owner findOwner(Long ownerId) {
         return verifyOwnerExists(ownerId);
     }
